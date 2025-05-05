@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from src.util import load_tools, plot_tools, quat_tools
 
 from sklearn.neighbors import NearestNeighbors
-from scipy.stats import chi2, norm, multivariate_normal
+from scipy.stats import chi2, norm, multivariate_normal, invgamma
 from scipy.special import logsumexp
 
 
@@ -19,7 +19,6 @@ def pre_process(x, x_dot):
     
     # return np.hstack((x, x_dir)) 
     return x, x_dir
-
 
 
 def reorder_assignments(z):
@@ -65,7 +64,15 @@ def sample_multi_normal(mu, Sigma):
     x = mu + A @ z
     return x
 
-    
+
+def sample_inv_gamma(psi, nu):
+    alpha = nu / 2
+    beta = (nu * psi) / 2
+    var = invgamma.rvs(a=alpha, scale=beta)
+
+    return var
+
+
 def compute_niw_posterior(Psi_0, nu_0, mu_0, kappa_0, psi_dir_0, x_k, x_dot_k):
     M_k, _ = x_k.shape
 
@@ -83,12 +90,18 @@ def compute_niw_posterior(Psi_0, nu_0, mu_0, kappa_0, psi_dir_0, x_k, x_dot_k):
     scatter_dir_ = quat_tools.riem_scatter(mean_dir_, x_dot_k)
     psi_dir_n    = (nu_0 * psi_dir_0 + scatter_dir_)/(nu_0+M_k)
 
-    return Psi_n, nu_n, mu_n, kappa_n
+    return Psi_n, nu_n, mu_n, kappa_n, psi_dir_n, mean_dir_
 
 
-def sample_label(x, Pi, gaussian_lists): 
+def sample_label(x, x_dir, Pi, gaussian_lists): 
     K = len(gaussian_lists)
-    logProb =  np.array([gaussian_lists[k].logpdf(x) for k in range(K)])
+    m, n = x.shape
+    mu_dir = [gaussian_lists[k]["mu_dir"] for k in range(K)]
+
+    x_dir_norm = [np.linalg.norm(quat_tools.riem_log(mu_dir[k], x_dir), axis=1, keepdims=True) for k in range(K)]
+    x_hat = [np.hstack((x, x_dir_norm[k])) for k in range(K)]
+
+    logProb =  np.array([gaussian_lists[k]['rv'].logpdf(x_hat[k]) for k in range(K)])
     logProb += np.log(Pi.reshape(-1, 1))
 
     """
@@ -117,7 +130,7 @@ Please choose a data input option:
 Enter the corresponding option number: '''
 
 x, x_dot, _, _ = load_tools.load_data(int(1))
-x, x_dot = pre_process(x, x_dot) 
+x, x_dir = pre_process(x, x_dot) 
 
 
 # step 0: define param
@@ -129,7 +142,7 @@ nu_0 = 5
 mu_0 = np.zeros((N,))
 kappa_0 = 1
 
-psi_dir_0 = 0.1
+psi_dir_0 = 1
 
 # step 1: init z
 rng = np.random.default_rng()
@@ -147,20 +160,34 @@ for t in range(T):
         Pi[k] = rng.gamma(len(index_lists[k]), 1)
         
         #step 3a: construct posterior NIW
-        Psi_n, nu_n, mu_n, kappa_n = compute_niw_posterior(Psi_0, nu_0, mu_0, kappa_0, psi_dir_0, x[index_lists[k]], x_dot[index_lists[k]])
+        Psi_n, nu_n, mu_n, kappa_n, psi_dir_n, mu_dir_k = compute_niw_posterior(Psi_0, nu_0, mu_0, kappa_0, psi_dir_0, x[index_lists[k]], x_dir[index_lists[k]])
 
         #step 3b: sample Sigma, Mu from posterior NIW
-        Sigma_k = sample_inverse_wishart(Psi_n, nu_n)
-        Sigma_k = 0.5 * (Sigma_k + Sigma_k.T) #ensure symmetry
-        mu_k = sample_multi_normal(mu_n, Sigma_k/kappa_n)
+        Sigma_pos_k = sample_inverse_wishart(Psi_n, nu_n)
+        Sigma_pos_k = 0.5 * (Sigma_pos_k + Sigma_pos_k.T) #ensure symmetry
+        mu_pos_k = sample_multi_normal(mu_n, Sigma_pos_k/kappa_n)
+
+        var_dir_k = sample_inv_gamma(psi_dir_n, nu_n)
 
         #step 3c: store sampled Gaussian
-        gaussian_lists.append(multivariate_normal(mu_k, Sigma_k, allow_singular=True))
+        mu_k = np.zeros((N+1, ))
+        mu_k[:N] = mu_pos_k
+        Sigma_k = np.eye(N+1)
+        Sigma_k[:N, :N] = Sigma_pos_k
+        Sigma_k[-1, -1] = var_dir_k
+
+        # gaussian_lists.append(multivariate_normal(mu_k, Sigma_k, allow_singular=True))
+        gaussian_lists.append(
+            {   
+                "mu_dir": mu_dir_k,
+                "rv"    : multivariate_normal(mu_k, Sigma_k, allow_singular=True)
+            }
+        )
 
     Pi /= np.sum(Pi)
 
     # step 4: sample labels
-    z = sample_label(x, Pi, gaussian_lists)
+    z = sample_label(x, x_dir, Pi, gaussian_lists)
 
 
 plot_tools.plot_gmm(x, z)
