@@ -1,0 +1,9 @@
+gmr
+numpy
+scipy
+matplotlib
+pyLasaDataset
+cvxpy
+dtw-python
+mosek
+scikit-learn
