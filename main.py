@@ -9,12 +9,10 @@ from scipy.special import logsumexp
 
 
 class GMM:
-    def __init__(self, x, init_cluster=10, Psi_0=None, nu_0=None, mu_0=None, kappa_0=None):
+    def __init__(self, x, Psi_0=None, nu_0=None, mu_0=None, kappa_0=None):
         self.x = x
         self.M, self.N = x.shape
-        self.init_cluster = init_cluster
         self.rng = np.random.default_rng()
-        self.z = self.rng.integers(0, self.init_cluster, size=self.M)
 
         self.Psi_0 = Psi_0 if Psi_0 is not None else np.eye(self.N)
         self.nu_0 = nu_0 if nu_0 is not None else 5
@@ -35,8 +33,8 @@ class GMM:
                 z[i] = len(rearrange_list) - 1
             else:
                 z[i] = rearrange_list.index(label)
-        K = max(z) + 1
-        return z, K
+        # K = max(z) + 1
+        return z
 
     def update_index_lists(self, z):
         M = z.shape[0]
@@ -76,14 +74,29 @@ class GMM:
         kappa_n = kappa_0 + M_k
         return Psi_n, nu_n, mu_n, kappa_n
 
-    def sample_label(self, x, Pi, gaussian_lists):
+    def sample_parameters(self, index_lists):
+        K = len(index_lists)
+        Pi = np.zeros((K, ))
+        gaussian_lists = []
+        for k in range(K):
+            Pi[k] = self.rng.gamma(len(index_lists[k]), 1)
+            Psi_n, nu_n, mu_n, kappa_n = self.compute_niw_posterior(self.Psi_0, self.nu_0, self.mu_0, self.kappa_0, self.x[index_lists[k]])
+            Sigma_k = self.sample_inverse_wishart(Psi_n, nu_n)
+            Sigma_k = 0.5 * (Sigma_k + Sigma_k.T)
+            mu_k = self.sample_multi_normal(mu_n, Sigma_k/kappa_n)
+            gaussian_lists.append(multivariate_normal(mu_k, Sigma_k, allow_singular=True))
+        Pi /= np.sum(Pi)
+
+        return Pi, gaussian_lists
+
+    def sample_label(self, Pi, gaussian_lists):
         K = len(gaussian_lists)
-        logProb =  np.array([gaussian_lists[k].logpdf(x) for k in range(K)])
+        logProb =  np.array([gaussian_lists[k].logpdf(self.x) for k in range(K)])
         logProb += np.log(Pi.reshape(-1, 1))
         log_denom = logsumexp(logProb, axis=0, keepdims=True)
         postProb = np.exp(logProb - log_denom)
         prob_cumsum = np.cumsum(postProb, axis=0)
-        uniform_draws = np.random.rand(x.shape[0])
+        uniform_draws = np.random.rand(self.M)
         z = np.argmax(prob_cumsum >= uniform_draws, axis=0)
         self.logProb = logProb
         return z
@@ -124,51 +137,41 @@ class GMM:
 
         logTargetRatio -= np.sum(gaussian_combined.logpdf(self.x[index_lists_combined]))
 
-
         return logTargetRatio
 
 
 
+    def fit(self, init_cluster: int = 10, T: int = 100):
+        z = self.rng.integers(0, init_cluster, size=self.M)
 
-    def fit(self, T=100):
-        z = self.z
-        for t in range(T):
-            z, K = self.reorder_assignments(z)
-            self.index_lists = self.update_index_lists(z)
-            Pi = np.zeros((K, ))
-            gaussian_lists = []
-            for k in range(K):
-                Pi[k] = self.rng.gamma(len(self.index_lists[k]), 1)
-                Psi_n, nu_n, mu_n, kappa_n = self.compute_niw_posterior(self.Psi_0, self.nu_0, self.mu_0, self.kappa_0, self.x[self.index_lists[k]])
-                Sigma_k = self.sample_inverse_wishart(Psi_n, nu_n)
-                Sigma_k = 0.5 * (Sigma_k + Sigma_k.T)
-                mu_k = self.sample_multi_normal(mu_n, Sigma_k/kappa_n)
-                gaussian_lists.append(multivariate_normal(mu_k, Sigma_k, allow_singular=True))
-            Pi /= np.sum(Pi)
+        for _ in range(T):
+            z = self.reorder_assignments(z)
+            index_lists = self.update_index_lists(z)
+            Pi, gaussian_lists = self.sample_parameters(index_lists)
+            z = self.sample_label(Pi, gaussian_lists)
             self.Pi = Pi
-            z = self.sample_label(self.x, Pi, gaussian_lists)
-        self.z = z
+            self.index_lists = index_lists
         return z
 
 
 
 
+if __name__ == "__main__":
+    input_message = '''
+    Please choose a data input option:
+    1. PC-GMM benchmark data
+    2. LASA benchmark data
+    3. Damm demo data
+    4. DEMO
+    Enter the corresponding option number: '''
 
-input_message = '''
-Please choose a data input option:
-1. PC-GMM benchmark data
-2. LASA benchmark data
-3. Damm demo data
-4. DEMO
-Enter the corresponding option number: '''
+    x, _, _, _ = load_tools.load_data(int(1))
 
-x, _, _, _ = load_tools.load_data(int(1))
+    gmm = GMM(x)
+    z = gmm.fit(init_cluster=10, T=100)
 
-gmm = GMM(x)
-z = gmm.fit()
+    plot_tools.plot_gmm(x, z)
 
-plot_tools.plot_gmm(x, z)
-
-plt.show()
+    plt.show()
 
 

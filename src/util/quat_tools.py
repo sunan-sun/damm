@@ -11,6 +11,8 @@ from scipy.spatial.transform import Rotation as R
 
 
 def karcher_mean(x):
+    # if x.shape[0] == 1:
+    #     return x[0]
     tol = 0.01
 
     # initial guess
