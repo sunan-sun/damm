@@ -1,38 +1,24 @@
-# Linear Parameter Varying Dynamical Systems (LPV-DS)
+# Directionality-Aware Mixture Model Parallel Sampling for Efficient Dynamical System Learning
 
-Boiler plate code of LPV-DS framework, compatible with any customizing clustering and optimization methods. Providing utilies functions from loading_tools, process_tools, plot_tools, and evaluation_tool to test on any variant of LPV-DS framework.
+Barebone implementation of Directionality-Aware Mixture Model(DAMM) designed for the learning of Linear Parameter Varying Dynamical System (LPV-DS). This module has been integrated as a part of the [LPV-DS](https://github.com/SunannnSun/lpvds) framework. Please refer to the [LPV-DS](https://github.com/SunannnSun/lpvds) repository for the specific use.
 
+## Reference
 
-<!-- ![Picture1](https://github.com/SunannnSun/damm_lpvds/assets/97807687/5a72467b-c771-4e8a-a0e0-7828efa59952) -->
-
-
-
-
-## Usage Example
-
-Fetch the required submodules
-```
-git submodule update --init --recursive
-```
-
-Compile [DAMM](https://github.com/SunannnSun/damm) submodule
-```
-cd src/damm/build
-cmake ../src
-make
-```
-
-Return to root directory and install all dependencies in a virtual environment
-- Make sure to replace `/path/to/python3.8` with the correct path to the Python 3.8 executable on your system. 
+If you find this code useful for you project, please consider citing it.
 
 ```
-cd -
-virtualenv -p /path/to/python3.8 venv
-source venv/bin/activate
-pip install -r requirements.txt
+@ARTICLE{10530930,
+  author={Sun, Sunan and Gao, Haihui and Li, Tianyu and Figueroa, Nadia},
+  journal={IEEE Robotics and Automation Letters}, 
+  title={Directionality-Aware Mixture Model Parallel Sampling for Efficient Linear Parameter Varying Dynamical System Learning}, 
+  year={2024},
+}
 ```
 
-Run 
-```
-python main.py
-```
+## Contact
+
+Contact: [Sunan Sun](https://sunan-sun.github.io/) (sunan@seas.upenn.edu)
+
+
+
+

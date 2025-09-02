@@ -178,3 +178,24 @@ def plot_incremental_ds(new_data, prev_data, att, x_test_list):
     ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
     ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
     ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+
+
+
+def plot_gamma(gamma_arr, **argv):
+
+    M, K = gamma_arr.shape
+
+    fig, axs = plt.subplots(K, 1, figsize=(12, 8))
+
+    colors = ["r", "g", "b", "k", 'c', 'm', 'y', 'crimson', 'lime'] + [
+    "#" + ''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(200)]
+
+    for k in range(K):
+        axs[k].scatter(np.arange(M), gamma_arr[:, k], s=5, color=colors[k])
+        axs[k].set_ylim([0, 1])
+    
+    if "title" in argv:
+        axs[0].set_title(argv["title"])
+    else:
+        axs[0].set_title(r"$\gamma(\cdot)$ over Time")
+

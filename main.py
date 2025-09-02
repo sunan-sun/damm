@@ -100,6 +100,15 @@ class GMM:
         z = np.argmax(prob_cumsum >= uniform_draws, axis=0)
         self.logProb = logProb
         return z
+    
+    def compute_gamma(self, x):
+        K = len(self.index_lists)
+        logProb =  np.array([self.gaussian_lists[k].logpdf(x) for k in range(K)])
+        logProb += np.log(self.Pi.reshape(-1, 1))
+        log_denom = logsumexp(logProb, axis=0, keepdims=True)
+        postProb = np.exp(logProb - log_denom)
+        return postProb.T
+
 
     def log_proposal_ratio(self):
         Pi = self.Pi
