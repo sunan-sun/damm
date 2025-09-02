@@ -1,5 +1,11 @@
 # Directionality-Aware Mixture Model Parallel Sampling for Efficient Dynamical System Learning
 
+_Last updated: September 2, 2025_
+> [!WARNING]  
+> This **C++ implementation** (`main_cpp` branch) is **legacy** and no longer maintained.  
+> Please use the **Python version** available in the `main` branch, which is the actively supported.
+
+
 Barebone implementation of Directionality-Aware Mixture Model(DAMM) tailored to the learning of Linear Parameter Varying Dynamical System (LPV-DS). This module cannot be used standalone, and has been integrated as a part of the [LPV-DS](https://github.com/SunannnSun/lpvds) framework. Please refer to the [LPV-DS](https://github.com/SunannnSun/lpvds) repository for the specific use.
 
 
