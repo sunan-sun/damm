@@ -154,7 +154,7 @@ class DAMM:
         Prior = [np.sum(z == k) / M for k in range(K)]
         Mu = np.array([np.mean(x[z == k], axis=0) for k in range(K)])
         Sigma = np.array([np.cov(x[z == k].T) for k in range(K)])
-        return [
+        return Prior, Mu, Sigma, [
             {
                 "prior": Prior[k],
                 "mu": Mu[k],
@@ -163,6 +163,7 @@ class DAMM:
             }
             for k in range(K)
         ]
+
 
     def fit(self, init_cluster: int = 10, T: int = 100) -> np.ndarray:
         self.z = self.rng.integers(0, init_cluster, size=self.M)
@@ -175,7 +176,7 @@ class DAMM:
             if t % 10 == 0 and t > 50:
                 for idx in self.index_lists:
                     self._split_proposal(idx)
-        self.gaussian_lists = DAMM.extract_gaussian(self.z, self.x)
+        self.Prior, self.Mu, self.Sigma, self.gaussian_lists = DAMM.extract_gaussian(self.z, self.x)
 
         return self.compute_gamma(self.x)
 
