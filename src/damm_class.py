@@ -1,11 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from src.util import load_tools, plot_tools, quat_tools
 from sklearn.neighbors import NearestNeighbors
 from scipy.stats import chi2, norm, multivariate_normal, invgamma
 from scipy.special import logsumexp
 from collections import OrderedDict
-from main import GMM
+
+from .util import load_tools, plot_tools, quat_tools
+from .gmm_class import GMM
 
 class DAMM:
     def __init__(self, x: np.ndarray, x_dir: np.ndarray, nu_0: float = 5, kappa_0: float = 1, psi_dir_0: float = 1):
@@ -125,10 +126,17 @@ class DAMM:
 
 
     def compute_gamma(self, x: np.ndarray) -> np.ndarray:
+        """
+        Gamma is normalized logProb: K x M
+        """
         logProb = np.array([g['rv'].logpdf(x) for g in self.gaussian_lists])
-        logProb += np.log([g['prior'] for g in self.gaussian_lists])[:, None]
-        postProb = np.exp(logProb - logsumexp(logProb, axis=0, keepdims=True))
-        return postProb.T
+        if logProb.ndim == 1:
+            logProb = logProb.reshape(-1, 1)
+
+        logPrior = np.log([g['prior'] for g in self.gaussian_lists]).reshape(-1, 1)
+        logProb += logPrior
+        gamma = np.exp(logProb - logsumexp(logProb, axis=0, keepdims=True))
+        return gamma
 
     def _split_proposal(self, index_list: list[int]) -> None:
         gmm = GMM(self.x[index_list])

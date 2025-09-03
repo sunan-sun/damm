@@ -183,7 +183,7 @@ def plot_incremental_ds(new_data, prev_data, att, x_test_list):
 
 def plot_gamma(gamma_arr, **argv):
 
-    M, K = gamma_arr.shape
+    K, M = gamma_arr.shape
 
     fig, axs = plt.subplots(K, 1, figsize=(12, 8))
 
@@ -191,7 +191,7 @@ def plot_gamma(gamma_arr, **argv):
     "#" + ''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(200)]
 
     for k in range(K):
-        axs[k].scatter(np.arange(M), gamma_arr[:, k], s=5, color=colors[k])
+        axs[k].scatter(np.arange(M), gamma_arr[k, :], s=5, color=colors[k])
         axs[k].set_ylim([0, 1])
     
     if "title" in argv:
