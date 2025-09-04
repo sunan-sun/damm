@@ -7,8 +7,8 @@
 This is the implementation of Directionality-Aware Mixture Model(DAMM) designed for the learning of Linear Parameter Varying Dynamical System (LPV-DS). This module has been integrated as a part of the [LPV-DS](https://github.com/SunannnSun/lpvds) framework.
 The following figures show 2D and 3D example clustering results produced by DAMM:
 
-<img src="gmm_result_pcgmm.png" alt="GMM clustering result" height="300"/>
-<img src="gmm_result_demo.png" alt="GMM clustering result" height="300"/>
+<img src="imgs/gmm_result_pcgmm.png" alt="GMM clustering result" height="300"/>
+<img src="imgs/gmm_result_demo.png" alt="GMM clustering result" height="300"/>
 
 
 ## Datasets

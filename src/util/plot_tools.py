@@ -41,7 +41,7 @@ def plot_gmm(x_train, label, damm=None):
             for num in np.arange(0, len(Mu[0])):
                 plt.text(Mu[0][num], Mu[1][num], str(num+1), fontsize=20)
         
-        plt.savefig('gmm_result.png', dpi=300)
+        # plt.savefig('gmm_result.png', dpi=300)
 
 
 
@@ -80,7 +80,7 @@ def plot_gmm(x_train, label, damm=None):
         ax.zaxis.set_major_locator(MaxNLocator(nbins=3))
         ax.tick_params(axis='z', which='major', pad=15)
         ax.view_init(elev=30, azim=-20)
-        plt.savefig('gmm_result.png', dpi=300)
+        # plt.savefig('gmm_result.png', dpi=300)
 
 
 
