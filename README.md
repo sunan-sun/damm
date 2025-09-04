@@ -8,8 +8,8 @@ This is the implementation of Directionality-Aware Mixture Model(DAMM) designed 
 The following figures show 2D and 3D example clustering results produced by DAMM:
 
 <p align="center">
-  <img src="imgs/gmm_result_pcgmm.png" height="360" style="vertical-align:middle;">
-  <img src="imgs/gmm_result_demo.png"  height="360" style="vertical-align:middle;">
+  <img src="imgs/gmm_result_pcgmm.png" height="250" style="vertical-align:middle;">
+  <img src="imgs/gmm_result_demo.png"  height="250" style="vertical-align:middle;">
 </p>
 
 ## Datasets
