@@ -7,9 +7,10 @@
 This is the implementation of Directionality-Aware Mixture Model(DAMM) designed for the learning of Linear Parameter Varying Dynamical System (LPV-DS). This module has been integrated as a part of the [LPV-DS](https://github.com/SunannnSun/lpvds) framework.
 The following figures show 2D and 3D example clustering results produced by DAMM:
 
-<img src="imgs/gmm_result_pcgmm.png" alt="GMM clustering result" height="300"/>
-<img src="imgs/gmm_result_demo.png" alt="GMM clustering result" height="300"/>
-
+<p align="center">
+  <img src="imgs/gmm_result_pcgmm.png" height="360" style="vertical-align:middle;">
+  <img src="imgs/gmm_result_demo.png"  height="360" style="vertical-align:middle;">
+</p>
 
 ## Datasets
 The datasets include [LASA handwriting dataset](https://github.com/justagist/pyLasaDataset) and [PC-GMM dataset](https://github.com/nbfigueroa/phys-gmm). One can change and choose the dataset in `main.py` following the instructions in comments. To test your own dataset, please examine and follow the data structure of the inputs in the example.
