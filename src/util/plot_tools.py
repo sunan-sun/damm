@@ -5,11 +5,11 @@ from matplotlib.ticker import MaxNLocator
 import random
 
 
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "Times New Roman",
-    "font.size": 30
-})
+# plt.rcParams.update({
+#     "text.usetex": True,
+#     "font.family": "Times New Roman",
+#     "font.size": 30
+# })
 
 
 

@@ -168,7 +168,7 @@ class DAMM:
     def fit(self, init_cluster: int = 10, T: int = 100) -> np.ndarray:
         self.z = self.rng.integers(0, init_cluster, size=self.M)
         for t in range(T):
-            print(t)
+            # print(t)
             self._reorder_assignments()
             self._update_index_lists()
             self._sample_parameters()
