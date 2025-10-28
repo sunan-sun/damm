@@ -43,8 +43,6 @@ def plot_gmm(x_train, label, damm=None):
         # plt.savefig('gmm_result.png', dpi=300)
 
 
-
-
     elif N == 3:
         ax = fig.add_subplot(projection='3d')
         ax.scatter(x_train[:, 0], x_train[:, 1], x_train[:, 2], 'o', color=color_mapping[:], s=3, alpha=0.4, label="Demonstration")
@@ -80,24 +78,4 @@ def plot_gmm(x_train, label, damm=None):
         ax.tick_params(axis='z', which='major', pad=15)
         ax.view_init(elev=30, azim=-20)
         # plt.savefig('gmm_result.png', dpi=300)
-
-
-
-def plot_gamma(gamma_arr, **argv):
-
-    K, M = gamma_arr.shape
-
-    fig, axs = plt.subplots(K, 1, figsize=(12, 8))
-
-    colors = ["r", "g", "b", "k", 'c', 'm', 'y', 'crimson', 'lime'] + [
-    "#" + ''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(200)]
-
-    for k in range(K):
-        axs[k].scatter(np.arange(M), gamma_arr[k, :], s=5, color=colors[k])
-        axs[k].set_ylim([0, 1])
-    
-    if "title" in argv:
-        axs[0].set_title(argv["title"])
-    else:
-        axs[0].set_title(r"$\gamma(\cdot)$ over Time")
 

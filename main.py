@@ -25,7 +25,6 @@ if __name__ == "__main__":
     gamma = damm.fit(init_cluster=30, T=100)
 
     plot_tools.plot_gmm(x, damm.z, damm)
-    plot_tools.plot_gamma(gamma)
     plt.show()
 
 
