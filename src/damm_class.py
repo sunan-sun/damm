@@ -8,6 +8,17 @@ from collections import OrderedDict
 from .util import load_tools, plot_tools, quat_tools
 from .gmm_class import GMM
 
+
+def adjust_cov(cov, rel_scale=0.7, total_scale=1.5):
+    vals, vecs = np.linalg.eigh(cov)
+    print("Old eigenvalues:", vals)
+    mean_val = np.mean(vals)
+    new_vals = (1 - rel_scale) * vals + rel_scale * mean_val
+    new_vals *= total_scale
+    print("New eigenvalues:", new_vals)
+    return vecs @ np.diag(new_vals) @ vecs.T
+
+
 class DAMM:
     def __init__(self, x: np.ndarray, x_dir: np.ndarray, nu_0: float = 5, kappa_0: float = 1, psi_dir_0: float = 1):
         self.x = x
@@ -153,12 +164,14 @@ class DAMM:
         M, N = x.shape
         Prior = [np.sum(z == k) / M for k in range(K)]
         Mu = np.array([np.mean(x[z == k], axis=0) for k in range(K)])
-        Sigma = np.array([np.cov(x[z == k].T) for k in range(K)])
+        # Sigma = np.array([np.cov(x[z == k].T) for k in range(K)])
+        Sigma = np.array([adjust_cov(np.cov(x[z == k].T)) for k in range(K)])
         return Prior, Mu, Sigma, [
             {
                 "prior": Prior[k],
                 "mu": Mu[k],
                 "sigma": Sigma[k],
+                # "sigma": adjust_cov(Sigma[k]),
                 "rv": multivariate_normal(Mu[k], Sigma[k], allow_singular=True)
             }
             for k in range(K)
@@ -179,6 +192,105 @@ class DAMM:
         self.Prior, self.Mu, self.Sigma, self.gaussian_lists = DAMM.extract_gaussian(self.z, self.x)
 
         return self.compute_gamma(self.x)
+    
+
+
+    def elasticUpdate(self, new_x, new_x_dot, new_gmm_struct):
+
+        Prior  = new_gmm_struct["Prior"].tolist()
+        Mu     = new_gmm_struct["Mu"]
+        Sigma  = new_gmm_struct["Sigma"]
+
+        gaussian_lists = []
+        for k in range(self.K):
+            gaussian_lists.append({   
+                "prior" : Prior[k],
+                "mu"    : Mu[k],
+                # "sigma" : Sigma[k],
+                "sigma" : adjust_cov(Sigma[k]),
+                "rv"    : multivariate_normal(Mu[k], Sigma[k], allow_singular=True)
+            })
+        self.gaussian_lists = gaussian_lists
+
+        gamma = self.compute_gamma(new_x)
+        assignment_arr = np.argmax(gamma, axis = 0) # reverse order that we are assigning given the new gmm parameters; hence there's chance some component being empty
+        unique_elements, counts = np.unique(assignment_arr, return_counts=True)
+        for element, count in zip(unique_elements, counts):
+            print("Current element", element)
+            print("has number", count)
+
+        # Remove Gaussians with count 0 or less than 10
+        to_keep = [k for k, count in zip(unique_elements, counts) if count >= 10]
+        removed_count = self.K - len(to_keep)
+        if removed_count > 0:
+            print(f"Removing {removed_count} Gaussian components with counts less than 10.")
+            # Filter gaussian_lists
+            self.gaussian_lists = [self.gaussian_lists[k] for k in to_keep]
+            # Filter Prior, Mu, Sigma
+            self.Prior = [Prior[k] for k in to_keep]
+            self.Mu = Mu[to_keep]
+            self.Sigma = Sigma[to_keep]
+            self.K = len(to_keep)
+
+            gamma = gamma[to_keep]
+            # Update assignment_arr to map old indices to new indices
+            mapping = {old_k: new_k for new_k, old_k in enumerate(to_keep)}
+            assignment_arr = np.array([mapping.get(a, -1) for a in assignment_arr])
+            # Remove any assignments that mapped to -1 (shouldn't happen if unique_elements cover all assignments)
+
+            if np.any(assignment_arr == -1):
+                orphan_idx = np.where(assignment_arr == -1)[0]
+                print(f"Reassigning {len(orphan_idx)} orphan points to nearest Gaussian.")
+
+                x_orphans = new_x[orphan_idx]
+
+                # Compute Mahalanobis distances for each orphan to all remaining components
+                dists = np.zeros((len(x_orphans), self.K))
+                for k in range(self.K):
+                    mu_k = self.Mu[k]
+                    sigma_k = self.Sigma[k]
+                    inv_sigma = np.linalg.inv(sigma_k)
+                    diff = x_orphans - mu_k
+                    dists[:, k] = np.einsum('ij,ij->i', diff @ inv_sigma, diff)  # Mahalanobis
+
+                nearest = np.argmin(dists, axis=1)
+                assignment_arr[orphan_idx] = nearest
+
+                gamma[:, orphan_idx] = 0.0
+                for idx, comp in zip(orphan_idx, nearest):
+                    gamma[comp, idx] = 1.0
+
+            self.assignment_arr = assignment_arr
+
+            # mask_valid = assignment_arr != -1
+            # self.assignment_arr = assignment_arr[mask_valid]
+            # gamma = gamma[to_keep][:, mask_valid]
+            # new_x = new_x[mask_valid, :]
+            # new_x_dot = new_x_dot[mask_valid, :]
+            # self.M = self.x.shape[0]
+        
+            new_gmm_struct["Prior"] = self.Prior
+            new_gmm_struct["Mu"] = self.Mu
+            new_gmm_struct["Sigma"] = self.Sigma
+
+    
+        return new_gmm_struct, self.assignment_arr, gamma
+    
+
+    @classmethod
+    def from_existing(cls, new_x, new_x_dot, new_gmm_struct):
+        obj = cls(new_x, new_x_dot)
+        obj.Prior = np.copy(new_gmm_struct["Prior"])
+        obj.Mu = np.copy(new_gmm_struct["Mu"])
+        obj.Sigma = np.copy(new_gmm_struct["Sigma"])
+        obj.gaussian_lists = [
+            {"prior": obj.Prior[k],
+            "mu": obj.Mu[k],
+            "sigma": obj.Sigma[k],
+            "rv": multivariate_normal(obj.Mu[k], obj.Sigma[k], allow_singular=True)}
+            for k in range(len(obj.Prior))
+        ]
+        return obj
 
 if __name__ == "__main__":
     input_message = '''

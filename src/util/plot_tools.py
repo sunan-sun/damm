@@ -77,5 +77,6 @@ def plot_gmm(x_train, label, damm=None):
         ax.zaxis.set_major_locator(MaxNLocator(nbins=3))
         ax.tick_params(axis='z', which='major', pad=15)
         ax.view_init(elev=30, azim=-20)
+        ax.axis('equal')
         # plt.savefig('gmm_result.png', dpi=300)
 
