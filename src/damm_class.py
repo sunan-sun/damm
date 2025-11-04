@@ -7,6 +7,8 @@ from collections import OrderedDict
 
 from .util import load_tools, plot_tools, quat_tools
 from .gmm_class import GMM
+from sklearn.mixture import BayesianGaussianMixture
+
 
 
 def adjust_cov(cov, rel_scale=0.7, total_scale=1.5):
@@ -194,6 +196,22 @@ class DAMM:
         return self.compute_gamma(self.x)
     
 
+    def fit_scikit(self):
+        gmm = BayesianGaussianMixture(n_components=10, n_init=3, random_state=2).fit(self.x)
+        
+        z = gmm.predict(self.x)
+        # remap labels preserving the order of first occurrence in z
+        ordered_labels = []
+        for label in z:
+            if label not in ordered_labels:
+                ordered_labels.append(label)
+        mapping = {old_label: new_label for new_label, old_label in enumerate(ordered_labels)}
+        z = np.array([mapping[label] for label in z])
+        self.z = z
+
+        self.K = np.max(self.z) + 1
+        self.Prior, self.Mu, self.Sigma, self.gaussian_lists = DAMM.extract_gaussian(self.z, self.x)
+        return self.compute_gamma(self.x)
 
     def elasticUpdate(self, new_x, new_x_dot, new_gmm_struct):
 
