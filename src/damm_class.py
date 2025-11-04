@@ -210,6 +210,7 @@ class DAMM:
                 "sigma" : Sigma[k],
                 # "sigma" : adjust_cov(Sigma[k]),
                 "rv"    : multivariate_normal(Mu[k], Sigma[k], allow_singular=True)
+                # "rv"    : multivariate_normal(Mu[k], adjust_cov(Sigma[k]), allow_singular=True)
             })
         self.gaussian_lists = gaussian_lists
 
